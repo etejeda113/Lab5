@@ -121,13 +121,6 @@ void show_message(const char *msg, int is_error) {
 }
 
 void initialize_tree() {
-    /* Note: This function is intentionally left empty initially.
-     * Once you implement create_question_node() and create_animal_node()
-     * in ds.c (TODOs 1-2), uncomment the code below to create the initial tree.
-     */
-    
-    /* UNCOMMENT THIS CODE AFTER IMPLEMENTING TODOs 1-2:
-    
     if (g_root != NULL) {
         free_tree(g_root);
     }
@@ -139,8 +132,6 @@ void initialize_tree() {
     
     h_free(&g_index);
     h_init(&g_index, 31);
-    
-    */
 }
 
 int main() {

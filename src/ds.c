@@ -15,7 +15,12 @@
  */
 Node *create_question_node(const char *question) {
     // TODO: Implement this function
-    return NULL;
+    Node* node = malloc(sizeof(Node));
+    node->text = strdup(question);
+    node->isQuestion = 1;
+    node->yes = NULL;
+    node->no = NULL;
+    return node;
 }
 
 /* TODO 2: Implement create_animal_node
@@ -24,9 +29,13 @@ Node *create_question_node(const char *question) {
  */
 Node *create_animal_node(const char *animal) {
     // TODO: Implement this function
-    return NULL;
+    Node* nodeA = malloc(sizeof(Node));
+    nodeA->text = strdup(animal);
+    nodeA->isQuestion = 0;
+    nodeA->yes = NULL;
+    nodeA->no = NULL;
+    return nodeA;
 }
-
 /* TODO 3: Implement free_tree (recursive)
  * - This is one of the few recursive functions allowed
  * - Base case: if node is NULL, return
@@ -38,6 +47,12 @@ Node *create_animal_node(const char *animal) {
  */
 void free_tree(Node *node) {
     // TODO: Implement this function
+    if(node==NULL)return;
+    free_tree(node->yes);
+    free_tree(node->no);
+    free(node->text);
+    free(node);
+
 }
 
 /* TODO 4: Implement count_nodes (recursive)
@@ -46,7 +61,13 @@ void free_tree(Node *node) {
  */
 int count_nodes(Node *root) {
     // TODO: Implement this function
-    return 0;
+    if(root==NULL){
+        return 0;
+    }
+    int sum=1;
+    sum+= count_nodes(root->yes);
+    sum+= count_nodes(root->no);
+    return sum;
 }
 
 /* ========== Frame Stack (for iterative tree traversal) ========== */
@@ -58,6 +79,9 @@ int count_nodes(Node *root) {
  */
 void fs_init(FrameStack *s) {
     // TODO: Implement this function
+    s->frames = malloc(16*sizeof(Frame));
+    s->size=0;
+    s->capacity=16;
 }
 
 /* TODO 6: Implement fs_push
@@ -68,6 +92,13 @@ void fs_init(FrameStack *s) {
  */
 void fs_push(FrameStack *s, Node *node, int answeredYes) {
     // TODO: Implement this function
+    if(s->size>=s->capacity){
+        s->capacity*=2;
+        s->frames=malloc(s->capacity*sizeof(Frame));
+    }
+    s->frames[s->size].node=node;
+    s->frames[s->size].answeredYes = answeredYes;
+    s->size++;
 }
 
 /* TODO 7: Implement fs_pop
