@@ -92,11 +92,11 @@ void fs_init(FrameStack *s) {
  */
 void fs_push(FrameStack *s, Node *node, int answeredYes) {
     // TODO: Implement this function
-    if(s->size>=s->capacity){
-        s->capacity*=2;
-        s->frames=malloc(s->capacity*sizeof(Frame));
+    if(s->size >= s->capacity){
+        s->capacity *= 2;
+        s->frames = malloc(s->capacity*sizeof(Frame));
     }
-    s->frames[s->size].node=node;
+    s->frames[s->size].node = node;
     s->frames[s->size].answeredYes = answeredYes;
     s->size++;
 }
@@ -107,9 +107,9 @@ void fs_push(FrameStack *s, Node *node, int answeredYes) {
  * Note: No need to check if empty - caller should use fs_empty() first
  */
 Frame fs_pop(FrameStack *s) {
-    Frame dummy = {NULL, -1};
     // TODO: Implement this function
-    return dummy;
+    s->size--;
+    return s->frames[s->size];
 }
 
 /* TODO 8: Implement fs_empty
@@ -117,7 +117,8 @@ Frame fs_pop(FrameStack *s) {
  */
 int fs_empty(FrameStack *s) {
     // TODO: Implement this function
-    return 1;
+    if(s->size == 0) return 1;
+    return 0;
 }
 
 /* TODO 9: Implement fs_free
@@ -127,6 +128,10 @@ int fs_empty(FrameStack *s) {
  */
 void fs_free(FrameStack *s) {
     // TODO: Implement this function
+    free(s->frames);
+    s->frames = NULL;
+    s->size = 0; 
+    s->capacity = 0;
 }
 
 /* ========== Edit Stack (for undo/redo) ========== */
