@@ -1,10 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <ctype.h>
+#include <string.h>
 #include "lab5.h"
 
 /* ========== Node Functions ========== */
+
+char *strdup(const char *src) {
+    char *dst = malloc(strlen(src) + 1);
+    if (dst) strcpy(dst, src);
+    return dst;
+}
 
 /* TODO 1: Implement create_question_node
  * - Allocate memory for a Node structure
@@ -317,7 +323,20 @@ void q_free(Queue *q) {
  */
 char *canonicalize(const char *s) {
     // TODO: Implement this function
-    return NULL;
+    char *result = malloc(strlen(s)+1*sizeof(char));
+    for(int i=0; i<strlen(s); i++){
+        if(isupper(s[i])){
+            result[i]=tolower(s[i]);
+        }else if(s[i] == ' '){
+            result[i] = '_';
+        }else if(s[i] == '?'){
+            result [i] ='\0';
+        }else{
+            result[i]=s[i];
+        }
+    }
+    result[strlen(s)+1]="\0";
+    return result;
 }
 
 /* TODO 21: Implement h_hash (djb2 algorithm)
@@ -343,9 +362,10 @@ unsigned h_hash(const char *s) {
  */
 void h_init(Hash *h, int nbuckets) {
     // TODO: Implement this function
-    Hash *newHash = calloc(nbuckets, sizeof(Hash));
-    newHash->nbuckets = nbuckets;
-    newHash->size = 0;
+    h->nbuckets = nbuckets;
+    h->size = 0;
+
+    h->buckets = calloc(nbuckets, sizeof(Entry *));
     
 }
 
@@ -369,7 +389,53 @@ void h_init(Hash *h, int nbuckets) {
  */
 int h_put(Hash *h, const char *key, int animalId) {
     // TODO: Implement this function
-    return 0;
+    int idx = h_hash(key) % h->nbuckets;
+    Entry *e = h->buckets[idx];
+
+    while(e){
+        if(strcmp(e->key, key) == 0){
+            for(int i=0; i < e->vals.count; i++){
+                if(e->vals.ids[i] == animalId){
+                    return 0;
+                }
+            }
+        if(e->vals.count >= e->vals.capacity){
+            int newMax = e->vals.capacity*2;
+            int *newIds = realloc(e->vals.ids, newMax*sizeof(int));
+            if(newIds==NULL) return 0;
+            e->vals.ids = newIds;
+            e->vals.capacity = newMax;
+        }
+        e->vals.ids[e->vals.count++] = animalId;
+        return 1;
+        }
+        e = e->next;
+    }
+    Entry *newEntry = malloc(sizeof(Entry));
+    if(newEntry==NULL) return 0;
+
+    newEntry->key = strdup(key);
+    if(newEntry->key == NULL){
+        free (newEntry);
+        return 0;
+    }
+
+    newEntry->vals.count = 1;
+    newEntry->vals.capacity = 4;
+    newEntry->vals.ids = malloc(newEntry->vals.capacity*sizeof(int));
+    if(newEntry->vals.ids==NULL){
+        free(newEntry->key);
+        free(newEntry);
+        return 0;
+    }
+    
+    newEntry->vals.ids[0] = animalId;
+
+    newEntry->next = h->buckets[idx];
+    h->buckets[idx] = newEntry;
+    h->size++;
+    return 1;
+
 }
 
 /* TODO 24: Implement h_contains
@@ -383,6 +449,7 @@ int h_put(Hash *h, const char *key, int animalId) {
  */
 int h_contains(const Hash *h, const char *key, int animalId) {
     // TODO: Implement this function
+    
     return 0;
 }
 
