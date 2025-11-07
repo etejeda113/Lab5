@@ -64,6 +64,37 @@ void play_game() {
     FrameStack stack;
     fs_init(&stack);
     
+    //   * 3. Push root frame with answeredYes = -1
+
+    Frame frame;
+    frame.node = g_root;
+    frame.answeredYes = -1;
+
+    //  * 4. Set parent = NULL, parentAnswer = -1
+
+    Node *parent = NULL;
+    int parentAnswer = -1;
+    /* 5. While stack not empty:
+ *    a. Pop current frame
+ *    b. If current node is a question:
+ *       - Display question and get user's answer (y/n)
+ *       - Set parent = current node
+ *       - Set parentAnswer = answer
+ *       - Push appropriate child (yes or no) onto stack
+ *    c. If current node is a leaf (animal):
+ *       - Ask "Is it a [animal]?"
+ *       - If correct: celebrate and break
+ *       - If wrong: LEARNING PHASE
+ *         i. Get correct animal name from user
+ *         ii. Get distinguishing question
+ *         iii. Get answer for new animal (y/n for the question)
+ *         iv. Create new question node and new animal node
+ *         v. Link them: if newAnswer is yes, newQuestion->yes = newAnimal
+ *         vi. Update parent pointer (or g_root if parent is NULL)
+ *         vii. Create Edit record and push to g_undo
+ *         viii. Clear g_redo stack
+ *         ix. Update g_index with canonicalized question
+*/
     // TODO: Your implementation here
     
     fs_free(&stack);
