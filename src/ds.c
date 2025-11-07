@@ -16,7 +16,8 @@
 Node *create_question_node(const char *question) {
     // TODO: Implement this function
     Node* node = malloc(sizeof(Node));
-    node->text = strdup(question);
+    node->text = malloc(strlen(question) + 1);
+    if (node->text != NULL) strcpy(node->text, question);
     node->isQuestion = 1;
     node->yes = NULL;
     node->no = NULL;
@@ -30,7 +31,8 @@ Node *create_question_node(const char *question) {
 Node *create_animal_node(const char *animal) {
     // TODO: Implement this function
     Node* nodeA = malloc(sizeof(Node));
-    nodeA->text = strdup(animal);
+    nodeA->text = malloc(strlen(animal) + 1);
+    if (nodeA->text != NULL) strcpy(nodeA->text, animal);
     nodeA->isQuestion = 0;
     nodeA->yes = NULL;
     nodeA->no = NULL;
@@ -141,6 +143,9 @@ void fs_free(FrameStack *s) {
  */
 void es_init(EditStack *s) {
     // TODO: Implement this function
+    s->size = 0;
+    s->capacity =16;
+    s->edits = malloc(s->capacity*sizeof(Frame));
 }
 
 /* TODO 11: Implement es_push
@@ -150,15 +155,22 @@ void es_init(EditStack *s) {
  */
 void es_push(EditStack *s, Edit e) {
     // TODO: Implement this function
+    if(s->size >= s->capacity){
+        s->capacity *= 2;
+        s->edits = malloc(s->capacity*sizeof(Edit));
+    }
+    s->edits[s->size] = e;
+    s->size++;
 }
 
 /* TODO 12: Implement es_pop
  * Similar to fs_pop but for Edit structs
  */
 Edit es_pop(EditStack *s) {
-    Edit dummy = {0};
+    // Edit dummy = {0};
     // TODO: Implement this function
-    return dummy;
+    s->size--;
+    return s->edits[s->size];
 }
 
 /* TODO 13: Implement es_empty
@@ -166,7 +178,8 @@ Edit es_pop(EditStack *s) {
  */
 int es_empty(EditStack *s) {
     // TODO: Implement this function
-    return 1;
+    if(s->size == 0) return 1;
+    return 0;
 }
 
 /* TODO 14: Implement es_clear
@@ -175,6 +188,7 @@ int es_empty(EditStack *s) {
  */
 void es_clear(EditStack *s) {
     // TODO: Implement this function
+    s->size = 0;
 }
 
 void es_free(EditStack *s) {
@@ -196,6 +210,9 @@ void free_edit_stack(EditStack *s) {
  */
 void q_init(Queue *q) {
     // TODO: Implement this function
+    q->front = NULL;
+    q->rear = NULL;
+    q->size = 0;
 }
 
 /* TODO 16: Implement q_enqueue
@@ -211,6 +228,19 @@ void q_init(Queue *q) {
  */
 void q_enqueue(Queue *q, Node *node, int id) {
     // TODO: Implement this function
+    QueueNode* newQ = malloc(sizeof(QueueNode));
+    newQ->treeNode = node;
+    newQ->id = id;
+    newQ ->next = NULL;
+    if(q->rear == NULL){
+        q->front = newQ;
+        q->rear = newQ;
+        q->size++;
+    }else{
+        q->rear->next = newQ;
+        q->rear = newQ;
+        q->size++;
+    }
 }
 
 /* TODO 17: Implement q_dequeue
@@ -225,7 +255,18 @@ void q_enqueue(Queue *q, Node *node, int id) {
  */
 int q_dequeue(Queue *q, Node **node, int *id) {
     // TODO: Implement this function
-    return 0;
+    if(q->front == NULL) return 0;
+    QueueNode* temp = q->front;
+    *node = temp->treeNode;
+    *id = temp->id;
+
+    q->front = q->front->next;
+    if(q->front == NULL){
+        q->rear = NULL;
+    }
+    free(temp);
+    q->size--;
+    return 1;
 }
 
 /* TODO 18: Implement q_empty
@@ -233,7 +274,8 @@ int q_dequeue(Queue *q, Node **node, int *id) {
  */
 int q_empty(Queue *q) {
     // TODO: Implement this function
-    return 1;
+    if(q->size == 0) return 1;
+    return 0;
 }
 
 /* TODO 19: Implement q_free
@@ -242,6 +284,15 @@ int q_empty(Queue *q) {
  */
 void q_free(Queue *q) {
     // TODO: Implement this function
+    Node** n;
+    int id;
+
+    while(q_dequeue(q,n,&id)!=0){
+
+    }
+    q->front = NULL;
+    q->rear = NULL;
+    q->size = 0;
 }
 
 /* ========== Hash Table ========== */
@@ -277,7 +328,12 @@ char *canonicalize(const char *s) {
  */
 unsigned h_hash(const char *s) {
     // TODO: Implement this function
-    return 0;
+    unsigned hash = 5381;
+    int c;
+    while((c = *s++)){
+        hash = (hash*33) +c;
+    }
+    return hash;
 }
 
 /* TODO 22: Implement h_init
@@ -287,6 +343,10 @@ unsigned h_hash(const char *s) {
  */
 void h_init(Hash *h, int nbuckets) {
     // TODO: Implement this function
+    Hash *newHash = calloc(nbuckets, sizeof(Hash));
+    newHash->nbuckets = nbuckets;
+    newHash->size = 0;
+    
 }
 
 /* TODO 23: Implement h_put
