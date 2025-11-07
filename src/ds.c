@@ -449,7 +449,19 @@ int h_put(Hash *h, const char *key, int animalId) {
  */
 int h_contains(const Hash *h, const char *key, int animalId) {
     // TODO: Implement this function
-    
+    int idx = h_hash (key) % h->nbuckets;
+    Entry *e = h->buckets[idx];
+    while(e){
+        if(strcmp(e->key, key) == 0){
+            for(int i=0; i < e->vals.count; i++){
+                if(e->vals.ids[i] == animalId){
+                    return 1;
+                }
+            }
+        return 0;
+        }
+    e = e->next;
+    }  
     return 0;
 }
 
@@ -470,6 +482,17 @@ int h_contains(const Hash *h, const char *key, int animalId) {
  */
 int *h_get_ids(const Hash *h, const char *key, int *outCount) {
     // TODO: Implement this function
+    int idx = h_hash(key) % h->nbuckets;
+    Entry *e = h->buckets[idx];
+
+    while(e){
+        if(strcmp(e->key, key)==0){
+            *outCount = e->vals.count;
+            return e->vals.ids;
+        }
+        e = e->next;
+    }
+
     *outCount = 0;
     return NULL;
 }
@@ -489,4 +512,18 @@ int *h_get_ids(const Hash *h, const char *key, int *outCount) {
  */
 void h_free(Hash *h) {
     // TODO: Implement this function
+    for(int i=0; i< h->nbuckets; i++){
+        Entry *e = h->buckets[i];
+        while(e){
+            Entry *temp = e;
+            e = e->next;
+            free(temp->key);
+            free(temp->vals.ids);
+            free(temp);
+        }
+    }
+    free(h->buckets);
+    h->buckets = NULL;
+    h->size = 0;
+    h->nbuckets = 0;
 }
