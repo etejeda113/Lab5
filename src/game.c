@@ -44,6 +44,7 @@ extern Hash g_index;
  *         ix. Update g_index with canonicalized question
  * 6. Free stack
  */
+
 void play_game() {
     clear();
     attron(COLOR_PAIR(5) | A_BOLD);
@@ -54,7 +55,8 @@ void play_game() {
     mvprintw(3, 2, "Press any key to start...");
     refresh();
     getch();
-    
+
+    /*return 
     // TODO: Implement the game loop
     // Initialize FrameStack
     // Push root
@@ -74,14 +76,52 @@ void play_game() {
 
     Node *parent = NULL;
     int parentAnswer = -1;
-    /* 5. While stack not empty:
- *    a. Pop current frame
- *    b. If current node is a question:
- *       - Display question and get user's answer (y/n)
- *       - Set parent = current node
- *       - Set parentAnswer = answer
- *       - Push appropriate child (yes or no) onto stack
- *    c. If current node is a leaf (animal):
+
+    fs_push(&stack, g_root, -1);
+
+    // 5. While stack not empty:
+
+    //*    a. Pop current frame
+
+    while(!fs_empty(&stack)){
+        Frame current = fs_pop(&stack);
+        Node *node = current.node;
+
+
+    /*    b. If current node is a question:
+    *       - Display question and get user's answer (y/n)
+    *       - Set parent = current node
+    *       - Set parentAnswer = answer
+    *       - Push appropriate child (yes or no) onto stack
+
+   
+    if(node->isQuestion == 1){
+        char answer;
+        while(1){
+            printf("%s (y/n)?", node->text);
+            refresh();
+            answer = getch();
+        
+        if(answer == 'y' || answer == 'Y' || answer == 'n' || answer == 'N') break;
+        }
+
+        parent = node;
+        if(answer == 'y' || answer == 'Y'){
+            parentAnswer = 1; 
+        }
+        else{
+            parentAnswer = 0;
+        }
+
+        if(parentAnswer){
+            fs_push(&stack, node->yes, 1);
+        }
+
+        else{
+            fs_push(&stack, node->no, 0);
+        }
+*/
+        /*    c. If current node is a leaf (animal):
  *       - Ask "Is it a [animal]?"
  *       - If correct: celebrate and break
  *       - If wrong: LEARNING PHASE
@@ -95,10 +135,9 @@ void play_game() {
  *         viii. Clear g_redo stack
  *         ix. Update g_index with canonicalized question
 */
-    // TODO: Your implementation here
     
-    fs_free(&stack);
-}
+    // TODO: Your implementation here
+    }
 
 /* TODO 32: Implement undo_last_edit
  * Undo the most recent tree modification
@@ -120,7 +159,30 @@ void play_game() {
  */
 int undo_last_edit() {
     // TODO: Implement this function
-    return 0;
+
+    //  * 1. Check if g_undo stack is empty, return 0 if so
+
+    if(es_empty(&g_undo) == 1){
+        return 0;
+    }
+
+    //  * 2. Pop edit from g_undo
+
+    Edit edit = es_pop(&g_undo);
+
+    if(edit.parent == NULL){
+        g_root = edit.oldLeaf;
+    }
+    else if(edit.wasYesChild == 1){
+        edit.parent->yes = edit.oldLeaf;
+    }
+    else{
+        edit.parent->no = edit.oldLeaf;
+    }
+    
+    es_push (&g_redo, edit);
+
+    return 1;
 }
 
 /* TODO 33: Implement redo_last_edit
@@ -141,5 +203,21 @@ int undo_last_edit() {
  */
 int redo_last_edit() {
     // TODO: Implement this function
-    return 0;
+    if(es_empty(&g_redo) == 1){
+        return 0;
+    }
+
+    Edit edit = es_pop(&g_redo);
+
+    if(edit.parent == NULL){
+        g_root = edit.newQuestion;
+    }
+    else if(edit.wasYesChild==1){
+        edit.parent->yes = edit.newQuestion;
+    }
+    else{
+        edit.parent->no = edit.newQuestion;
+    }
+    es_push(&g_undo, edit);
+    return 1;
 }

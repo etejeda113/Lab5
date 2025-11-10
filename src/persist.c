@@ -110,9 +110,9 @@ int save_tree(const char *filename) {
 
     uint32_t magic = MAGIC;
     uint32_t version = VERSION;
-    fwrite(&magic, sizeof(int), 1, fptr);
-    fwrite(&version, sizeof(int), 1, fptr);
-    fwrite(&nodeCount, sizeof(int), 1, fptr);
+    fwrite(&magic, sizeof(uint32_t), 1, fptr);
+    fwrite(&version, sizeof(uint32_t), 1, fptr);
+    fwrite(&nodeCount, sizeof(uint32_t), 1, fptr);
 
 
     //  *    - Write isQuestion, textLen, text bytes
@@ -120,20 +120,20 @@ int save_tree(const char *filename) {
     for(int i=0; i<nodeCount; i++){
         Node *node = mappings[i].node; 
 
-        uint8_t isQUestion;
+        uint8_t isQuestion;
         if(node->isQuestion != 0){
-            isQUestion =1;
+            isQuestion =1;
         } else{
-            isQUestion =0;
+            isQuestion =0;
         }
 
-        int textLength = strlen(node->text);
+        uint32_t textLength = strlen(node->text);
 
 
     //Find yes child's id in mappings (or -1)
 
-    int yesChildID = -1;
-    int noChildID = -1;
+    int32_t yesChildID = -1;
+    int32_t noChildID = -1;
 
     for(int j=0; j<nodeCount; j++){
         if(mappings[j].node == node->yes){
@@ -144,11 +144,11 @@ int save_tree(const char *filename) {
         }
     }
 
-    fwrite(&isQUestion, sizeof(uint8_t), 1, fptr);
-    fwrite(&textLength, sizeof(int), 1, fptr);
+    fwrite(&isQuestion, sizeof(uint8_t), 1, fptr);
+    fwrite(&textLength, sizeof(uint32_t), 1, fptr);
     fwrite(node->text, sizeof(char), textLength, fptr);
-    fwrite(&yesChildID, sizeof(int), 1, fptr);
-    fwrite(&noChildID, sizeof(int), 1, fptr);
+    fwrite(&yesChildID, sizeof(int32_t), 1, fptr);
+    fwrite(&noChildID, sizeof(int32_t), 1, fptr);
 
 }
 
@@ -195,15 +195,174 @@ int load_tree(const char *filename) {
 
     // * 1. Open file for reading binary ("rb")
 
-    if(filename == NULL) return 0;
-
+    
     FILE *fptr = fopen(filename, "rb");
     if(fptr == NULL) return 0;
-
+    
     //  * 2. Read and validate header (magic, version, count)
 
-    uint32_t magic = MAGIC;
-    uint32_t version = VERSION;
+    uint32_t magic;
+    uint32_t version;
     uint32_t count;
-    return 0;
+
+    if(fread(&magic, sizeof(uint32_t), 1, fptr) != 1){
+        fclose(fptr);
+        return 0;
+    }
+
+    if(fread(&version, sizeof(uint32_t), 1, fptr) != 1){
+        fclose(fptr);  
+        return 0;  
+    }
+
+    if(fread(&count, sizeof(uint32_t), 1, fptr) != 1){
+        fclose(fptr);
+        return 0;
+
+    }
+
+    printf("DEBUG: magic=0x%X version=%u count=%u\n", magic, version, count);
+
+    // validating
+    
+    if(magic != MAGIC || version != VERSION){
+        fclose(fptr);
+        return 0;
+    }
+
+    // * 3. Allocate arrays for nodes and child IDs
+    Node **nodes = calloc(count, sizeof(Node*));
+    int32_t *yesIds = calloc(count, sizeof(int32_t));
+    int32_t *noIds = calloc(count, sizeof(int32_t));
+    if (!nodes || !yesIds || !noIds) goto load_err;
+
+    
+    //* 4. Read each node:
+
+    //*    - Read isQuestion, textLen
+    
+    for (uint32_t i=0; i<count; i++){
+        uint8_t isQuestion;
+        uint32_t textLen;
+        int32_t yesId, noId;
+
+        if(fread(&isQuestion, sizeof(uint8_t), 1, fptr) != 1){
+            goto load_err;
+        }
+        if(fread(&textLen, sizeof(uint32_t), 1, fptr) != 1){
+            goto load_err;
+        }
+        
+    //*    - Validate textLen (e.g., < 10000)
+
+    if (textLen == 0 || textLen >= 10000){
+        goto load_err;
+    }
+
+    //*    - Allocate and read text string (add null terminator!)
+
+    char *text = malloc(textLen+1);
+    if(text== NULL){
+        goto load_err;
+    }
+
+    if(fread(text, 1, textLen, fptr) != textLen){
+        free(text);
+        goto load_err;
+    }
+
+    text[textLen] = '\0';
+
+    //*    - Read yesId, noId
+
+    if(fread(&yesId, sizeof(int32_t), 1, fptr) != 1){
+        free(text);
+        goto load_err;
+    }
+
+    if(fread(&noId, sizeof(int32_t), 1, fptr) != 1){
+        free(text);
+        goto load_err;
+    }
+
+    //*    - Validate IDs are in range [-1, count)
+    if(yesId < -1 || yesId >= (int32_t)count){        
+        free(text);
+        goto load_err;
+    }
+     if(noId < -1 || noId >= (int32_t)count){
+        free(text);
+        goto load_err;
+    }
+
+    //*    - Create Node and store in nodes[i]
+
+    Node *node = malloc(sizeof(Node));
+
+    if(node == NULL){
+        goto load_err;
+    }
+
+    node->isQuestion = isQuestion;
+    node->text = text;
+    node->yes = NULL;
+    node->no = NULL;
+    
+    nodes[i] = node;
+    yesIds[i] = yesId;
+    noIds[i] = noId;
+}
+//* 5. Link nodes using stored IDs:
+
+//*    - For each node i:
+// *      - If yesIds[i] >= 0: nodes[i]->yes = nodes[yesIds[i]]
+// *      - If noIds[i] >= 0: nodes[i]->no = nodes[noIds[i]]
+
+for(uint32_t i=0; i<count; i++){
+    if(yesIds[i] >= 0){
+        nodes[i]->yes = nodes[yesIds[i]];
+    }
+    if(noIds[i] >= 0){
+        nodes[i]->no = nodes[noIds[i]];
+    }
+
+}
+
+// * 6. Free old g_root if not NULL
+
+// * 7. Set g_root = nodes[0]
+
+if (g_root != NULL){
+    free_tree(g_root);
+}
+
+g_root = nodes[0];
+
+// * 8. Clean up temporary arrays
+
+free(nodes);
+free(yesIds);
+free(noIds);
+fclose(fptr);
+
+// * 9. Retrn 1 on success
+
+return 1;
+
+
+// if there is an error free everythign
+load_err:
+    if(nodes){
+        for(int i=0; i<count; i++){
+            if(nodes[i]){
+                free(nodes[i]->text);
+                free(nodes[i]);
+            }
+        }
+    }
+free(nodes);
+free(yesIds);
+free(noIds);
+if(fptr) fclose(fptr);
+return 0;
 }

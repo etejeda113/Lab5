@@ -323,19 +323,20 @@ void q_free(Queue *q) {
  */
 char *canonicalize(const char *s) {
     // TODO: Implement this function
+
     char *result = malloc(strlen(s)+1*sizeof(char));
+    if (result==NULL){
+        return NULL;
+    }
+    int j=0;
     for(int i=0; i<strlen(s); i++){
-        if(isupper(s[i])){
-            result[i]=tolower(s[i]);
+        if(isalnum(s[i])){
+            result[j++]=tolower(s[i]);
         }else if(s[i] == ' '){
-            result[i] = '_';
-        }else if(s[i] == '?'){
-            result [i] ='\0';
-        }else{
-            result[i]=s[i];
+            result[j++] = '_';
         }
     }
-    result[strlen(s)+1]="\0";
+    result[j] = '\0';
     return result;
 }
 
