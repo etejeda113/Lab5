@@ -46,10 +46,6 @@ int check_integrity() {
     
     q_enqueue(&q, g_root, 0);
 
-    // * 3. Set valid = 1
-
-    int valid = 1;
-
     // * 4. While queue not empty:
     //*    - Dequeue node
     //*    - If node->isQuestion:
@@ -61,22 +57,28 @@ int check_integrity() {
     //*      - If so, set valid = 0 and break
  
     while(!q_empty(&q)){
-        Node *node;
-        int id;
+      /**/  Node *node = NULL;
+        int id =0;
         q_dequeue(&q, &node, &id);
+
+        if(!node){
+            q_free(&q);
+            return 0;
+        }
 
         if(node->isQuestion){
             if(node->yes == NULL || node->no == NULL){
-                valid = 0;
-                break;
+                q_free(&q);
+                return 0;
+                
             }
         q_enqueue(&q, node->yes, 0);
         q_enqueue(&q, node->no, 0);
         }
         else{
             if(node->yes != NULL || node->no != NULL){
-                valid = 0;
-                break;
+                q_free(&q);
+                return 0;
             }
         }
     }
@@ -84,7 +86,7 @@ int check_integrity() {
     //* 5. Free queue and return valid
     
     q_free(&q);
-    return valid;
+    return 1;
 }
 
 typedef struct PathNode {

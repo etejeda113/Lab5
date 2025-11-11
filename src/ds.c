@@ -96,8 +96,13 @@ int count_nodes(Node *root) {
 void fs_init(FrameStack *s) {
     // TODO: Implement this function
     s->frames = malloc(16*sizeof(Frame));
-    s->size=0;
-    s->capacity=16;
+    if (!s->frames) {
+        s->size = 0;
+        s->capacity = 0;
+        return;
+    }
+    s->size = 0;
+    s->capacity = 16;
 }
 
 /* TODO 6: Implement fs_push
@@ -108,6 +113,8 @@ void fs_init(FrameStack *s) {
  */
 void fs_push(FrameStack *s, Node *node, int answeredYes) {
     // TODO: Implement this function
+    if (!s || !s->frames) return;  // Add safety check
+    
     if(s->size >= s->capacity){
         s->capacity *= 2;
         Frame *temp = realloc(s->frames, s->capacity*sizeof(Frame));
@@ -119,6 +126,7 @@ void fs_push(FrameStack *s, Node *node, int answeredYes) {
     s->size++;
 }
 
+
 /* TODO 7: Implement fs_pop
  * - Decrement size
  * - Return the frame at frames[size]
@@ -128,6 +136,9 @@ Frame fs_pop(FrameStack *s) {
     // TODO: Implement this function
     s->size--;
     return s->frames[s->size];
+
+    Frame dummy = {NULL, -1};
+    return dummy;
 }
 
 /* TODO 8: Implement fs_empty
@@ -136,7 +147,7 @@ Frame fs_pop(FrameStack *s) {
 int fs_empty(FrameStack *s) {
     // TODO: Implement this function
     if(s->size == 0) return 1;
-    return 0;
+    return (s->size == 0) ? 1 : 0;
 }
 
 /* TODO 9: Implement fs_free
@@ -146,6 +157,7 @@ int fs_empty(FrameStack *s) {
  */
 void fs_free(FrameStack *s) {
     // TODO: Implement this function
+    if(!s) return;
     free(s->frames);
     s->frames = NULL;
     s->size = 0; 
@@ -159,9 +171,14 @@ void fs_free(FrameStack *s) {
  */
 void es_init(EditStack *s) {
     // TODO: Implement this function
+    s->edits = malloc(16*sizeof(Edit));
+    if(!s->edits){
+        s->size = 0;
+        s->capacity = 0;
+        return;
+    }
     s->size = 0;
     s->capacity =16;
-    s->edits = malloc(s->capacity*sizeof(Edit));
 }
 
 /* TODO 11: Implement es_push
@@ -171,6 +188,8 @@ void es_init(EditStack *s) {
  */
 void es_push(EditStack *s, Edit e) {
     // TODO: Implement this function
+    if (!s || !s->edits) return;
+
     if(s->size >= s->capacity){
         s->capacity *= 2;
         Edit *temp = realloc(s->edits, s->capacity*sizeof(Edit));
@@ -187,8 +206,12 @@ void es_push(EditStack *s, Edit e) {
 Edit es_pop(EditStack *s) {
     // Edit dummy = {0};
     // TODO: Implement this function
+    if(s && s->size >0){
     s->size--;
     return s->edits[s->size];
+    }
+    Edit dummy = {0};
+    return dummy;
 }
 
 /* TODO 13: Implement es_empty
@@ -196,8 +219,8 @@ Edit es_pop(EditStack *s) {
  */
 int es_empty(EditStack *s) {
     // TODO: Implement this function
-    if(s->size == 0) return 1;
-    return 0;
+    if(!s || !s->edits) return 1;
+    return (s->size == 0) ? 1 : 0;
 }
 
 /* TODO 14: Implement es_clear
