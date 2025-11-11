@@ -1,0 +1,4 @@
+=== DEBUG START ===
+g_root = 0x591ce97f7620
+g_root->text = Does it live in water?
+About to call clear()

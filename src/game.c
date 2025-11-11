@@ -8,6 +8,8 @@ extern Node *g_root;
 extern EditStack g_undo;
 extern EditStack g_redo;
 extern Hash g_index;
+char *strdup(const char *s);
+
 
 /* TODO 31: Implement play_game
  * Main game loop using iterative traversal with a stack
@@ -46,6 +48,7 @@ extern Hash g_index;
  */
 
 void play_game() {
+    
     clear();
     attron(COLOR_PAIR(5) | A_BOLD);
     mvprintw(0, 0, "%-80s", " Playing 20 Questions");
@@ -56,8 +59,8 @@ void play_game() {
     refresh();
     getch();
 
-    /*return 
     // TODO: Implement the game loop
+
     // Initialize FrameStack
     // Push root
     // Loop until stack empty or guess is correct
@@ -67,78 +70,139 @@ void play_game() {
     fs_init(&stack);
     
     //   * 3. Push root frame with answeredYes = -1
-
-    Frame frame;
-    frame.node = g_root;
-    frame.answeredYes = -1;
-
     //  * 4. Set parent = NULL, parentAnswer = -1
+
+    fs_push(&stack, g_root, -1);
 
     Node *parent = NULL;
     int parentAnswer = -1;
-
-    fs_push(&stack, g_root, -1);
+    int done =0;
 
     // 5. While stack not empty:
 
     //*    a. Pop current frame
 
-    while(!fs_empty(&stack)){
+    while(!fs_empty(&stack) && !done){
         Frame current = fs_pop(&stack);
-        Node *node = current.node;
-
-
-    /*    b. If current node is a question:
-    *       - Display question and get user's answer (y/n)
-    *       - Set parent = current node
-    *       - Set parentAnswer = answer
-    *       - Push appropriate child (yes or no) onto stack
-
+        Node *cur = current.node;
    
-    if(node->isQuestion == 1){
-        char answer;
-        while(1){
-            printf("%s (y/n)?", node->text);
+        if(cur == NULL){
+            break;
+        }
+
+        if(cur->isQuestion == 1){
+        char prompt[256];
+        snprintf(prompt, sizeof(prompt), "%s (y/n): ", cur->text);
+        int answer = get_yes_no(6, 2, prompt);
+
+        parent = cur;
+        parentAnswer = answer;
+
+        Node *next = (answer == 1) ? cur->yes : cur->no;
+        fs_push(&stack, next, answer);
+
+        mvprintw(6, 2, "%-76s", "");
+        refresh();
+        continue;
+        }
+
+        char prompt [256];
+        snprintf(prompt, sizeof(prompt), "Is it a %s? (y/n): ", cur->text);
+        int correct = get_yes_no(6, 2, prompt);
+        mvprintw(6, 2, "%-76s", ""); 
+        refresh();
+
+        if(correct == 1){
+            attron(COLOR_PAIR(3) | A_BOLD);
+            mvprintw(8, 2, "Yay! I guessed it!");
+            attron(COLOR_PAIR(3) | A_BOLD);
+            mvprintw(10, 2, "Press any key to return...");
             refresh();
-            answer = getch();
-        
-        if(answer == 'y' || answer == 'Y' || answer == 'n' || answer == 'N') break;
+            getch();
+            done = -1;
+            break;
         }
 
-        parent = node;
-        if(answer == 'y' || answer == 'Y'){
-            parentAnswer = 1; 
-        }
-        else{
-            parentAnswer = 0;
-        }
+char *newAnimal = get_input(8, 2, "What animal were you thinking of? ");
+if(!newAnimal || newAnimal[0] == '\0'){
+    mvprintw(10, 2, "No animal provided. Press any key to return...");
+    refresh();
+    getch();
+    break;
+}
 
-        if(parentAnswer){
-            fs_push(&stack, node->yes, 1);
-        }
+// Clear line 8 after getting input
+mvprintw(8, 2, "%-76s", "");
+refresh();
 
-        else{
-            fs_push(&stack, node->no, 0);
-        }
-*/
-        /*    c. If current node is a leaf (animal):
- *       - Ask "Is it a [animal]?"
- *       - If correct: celebrate and break
- *       - If wrong: LEARNING PHASE
- *         i. Get correct animal name from user
- *         ii. Get distinguishing question
- *         iii. Get answer for new animal (y/n for the question)
- *         iv. Create new question node and new animal node
- *         v. Link them: if newAnswer is yes, newQuestion->yes = newAnimal
- *         vi. Update parent pointer (or g_root if parent is NULL)
- *         vii. Create Edit record and push to g_undo
- *         viii. Clear g_redo stack
- *         ix. Update g_index with canonicalized question
-*/
-    
-    // TODO: Your implementation here
-    }
+char prompt_q[256];
+snprintf(prompt_q, sizeof(prompt_q), "Provide a question to distinguish %s: ", newAnimal);
+char *distQ_in = get_input(8, 2, prompt_q);  // Use line 8 again
+if(!distQ_in || distQ_in[0] == '\0'){
+    mvprintw(10, 2, "No question provided. Press any key to return...");
+    refresh();
+    getch();
+    break;
+}
 
+// Clear line 8 again before the next prompt
+mvprintw(8, 2, "%-76s", "");
+refresh();
+
+char answer_prompt[256];
+snprintf(answer_prompt, sizeof(answer_prompt), "For %s, is the answer yes? (y/n): ", newAnimal);
+int answeredYes = get_yes_no(8, 2, answer_prompt);  // Use line 8 for consistency
+
+// Clear the prompt line after getting the answer
+mvprintw(8, 2, "%-76s", "");
+refresh();
+
+Node *qNode = create_question_node(distQ_in);
+Node *ansNode = create_animal_node(newAnimal);
+
+if(!qNode || !ansNode){
+    if(qNode) free_tree(qNode);
+    if(ansNode) free_tree(ansNode);
+    break;
+}
+
+if(answeredYes){
+    qNode->yes = ansNode;
+    qNode->no = cur;
+}else{
+    qNode->yes = cur;
+    qNode->no = ansNode;
+}
+
+if(parent == NULL){
+    g_root = qNode;
+}else if(parentAnswer == 1){
+    parent->yes = qNode;
+}else{
+    parent->no = qNode;
+}
+
+Edit e;
+e.type = EDIT_INSERT_SPLIT;
+e.parent = parent;
+e.wasYesChild = parent ? parentAnswer : -1;
+e.oldLeaf = cur;
+e.newQuestion = qNode;
+e.newLeaf = ansNode;
+
+es_push(&g_undo, e);
+es_clear(&g_redo);
+
+attron(COLOR_PAIR(3) | A_BOLD);
+mvprintw(10, 2, "Thanks! I'll remember that.");
+attroff(COLOR_PAIR(3) | A_BOLD);
+mvprintw(12, 2, "Press any key to return...");
+refresh();
+getch();
+done = 1;
+}
+fs_free(&stack);
+}
 /* TODO 32: Implement undo_last_edit
  * Undo the most recent tree modification
  * 

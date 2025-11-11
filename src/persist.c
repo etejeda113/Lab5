@@ -343,24 +343,23 @@ g_root = nodes[0];
 free(nodes);
 free(yesIds);
 free(noIds);
-fclose(fptr);
 
 // * 9. Retrn 1 on success
-
+fclose(fptr);
 return 1;
 
 
 // if there is an error free everythign
 load_err:
     if(nodes){
-        for(int i=0; i<count; i++){
+        for(uint32_t i=0; i<count; i++){
             if(nodes[i]){
                 free(nodes[i]->text);
                 free(nodes[i]);
             }
         }
+        free(nodes);
     }
-free(nodes);
 free(yesIds);
 free(noIds);
 if(fptr) fclose(fptr);

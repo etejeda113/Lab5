@@ -22,8 +22,12 @@ char *strdup(const char *src) {
 Node *create_question_node(const char *question) {
     // TODO: Implement this function
     Node* node = malloc(sizeof(Node));
-    node->text = malloc(strlen(question) + 1);
-    if (node->text != NULL) strcpy(node->text, question);
+    if(!node) return NULL;
+    node->text = strdup(question);
+    if(!node->text){
+        free(node);
+        return NULL;
+    }
     node->isQuestion = 1;
     node->yes = NULL;
     node->no = NULL;
@@ -37,8 +41,12 @@ Node *create_question_node(const char *question) {
 Node *create_animal_node(const char *animal) {
     // TODO: Implement this function
     Node* nodeA = malloc(sizeof(Node));
-    nodeA->text = malloc(strlen(animal) + 1);
-    if (nodeA->text != NULL) strcpy(nodeA->text, animal);
+    if(!nodeA) return NULL;
+    nodeA->text = strdup(animal);
+    if(!nodeA->text){
+        free(nodeA);
+        return NULL;
+    }
     nodeA->isQuestion = 0;
     nodeA->yes = NULL;
     nodeA->no = NULL;
@@ -102,7 +110,9 @@ void fs_push(FrameStack *s, Node *node, int answeredYes) {
     // TODO: Implement this function
     if(s->size >= s->capacity){
         s->capacity *= 2;
-        s->frames = malloc(s->capacity*sizeof(Frame));
+        Frame *temp = realloc(s->frames, s->capacity*sizeof(Frame));
+        if(!temp) return;
+        s->frames = temp;
     }
     s->frames[s->size].node = node;
     s->frames[s->size].answeredYes = answeredYes;
@@ -151,7 +161,7 @@ void es_init(EditStack *s) {
     // TODO: Implement this function
     s->size = 0;
     s->capacity =16;
-    s->edits = malloc(s->capacity*sizeof(Frame));
+    s->edits = malloc(s->capacity*sizeof(Edit));
 }
 
 /* TODO 11: Implement es_push
@@ -163,7 +173,9 @@ void es_push(EditStack *s, Edit e) {
     // TODO: Implement this function
     if(s->size >= s->capacity){
         s->capacity *= 2;
-        s->edits = malloc(s->capacity*sizeof(Edit));
+        Edit *temp = realloc(s->edits, s->capacity*sizeof(Edit));
+        if(!temp) return;
+        s->edits = temp;
     }
     s->edits[s->size] = e;
     s->size++;
@@ -290,10 +302,10 @@ int q_empty(Queue *q) {
  */
 void q_free(Queue *q) {
     // TODO: Implement this function
-    Node** n;
+    Node* n;
     int id;
 
-    while(q_dequeue(q,n,&id)!=0){
+    while(q_dequeue(q,&n,&id)!=0){
 
     }
     q->front = NULL;
@@ -329,7 +341,9 @@ char *canonicalize(const char *s) {
         return NULL;
     }
     int j=0;
-    for(int i=0; i<strlen(s); i++){
+    size_t len = strlen(s);
+
+    for(size_t i=0; i<len; i++){
         if(isalnum(s[i])){
             result[j++]=tolower(s[i]);
         }else if(s[i] == ' '){
