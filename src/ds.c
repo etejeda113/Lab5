@@ -96,11 +96,6 @@ int count_nodes(Node *root) {
 void fs_init(FrameStack *s) {
     // TODO: Implement this function
     s->frames = malloc(16*sizeof(Frame));
-    if (!s->frames) {
-        s->size = 0;
-        s->capacity = 0;
-        return;
-    }
     s->size = 0;
     s->capacity = 16;
 }
@@ -113,13 +108,9 @@ void fs_init(FrameStack *s) {
  */
 void fs_push(FrameStack *s, Node *node, int answeredYes) {
     // TODO: Implement this function
-    if (!s || !s->frames) return;  // Add safety check
-    
-    if(s->size >= s->capacity){
+     if(s->size >= s->capacity){
         s->capacity *= 2;
-        Frame *temp = realloc(s->frames, s->capacity*sizeof(Frame));
-        if(!temp) return;
-        s->frames = temp;
+        s->frames = realloc(s->frames, s->capacity*sizeof(Frame));
     }
     s->frames[s->size].node = node;
     s->frames[s->size].answeredYes = answeredYes;
@@ -136,9 +127,6 @@ Frame fs_pop(FrameStack *s) {
     // TODO: Implement this function
     s->size--;
     return s->frames[s->size];
-
-    Frame dummy = {NULL, -1};
-    return dummy;
 }
 
 /* TODO 8: Implement fs_empty
@@ -147,7 +135,7 @@ Frame fs_pop(FrameStack *s) {
 int fs_empty(FrameStack *s) {
     // TODO: Implement this function
     if(s->size == 0) return 1;
-    return (s->size == 0) ? 1 : 0;
+    return 0;
 }
 
 /* TODO 9: Implement fs_free
@@ -157,7 +145,6 @@ int fs_empty(FrameStack *s) {
  */
 void fs_free(FrameStack *s) {
     // TODO: Implement this function
-    if(!s) return;
     free(s->frames);
     s->frames = NULL;
     s->size = 0; 
@@ -172,11 +159,6 @@ void fs_free(FrameStack *s) {
 void es_init(EditStack *s) {
     // TODO: Implement this function
     s->edits = malloc(16*sizeof(Edit));
-    if(!s->edits){
-        s->size = 0;
-        s->capacity = 0;
-        return;
-    }
     s->size = 0;
     s->capacity =16;
 }
@@ -188,13 +170,9 @@ void es_init(EditStack *s) {
  */
 void es_push(EditStack *s, Edit e) {
     // TODO: Implement this function
-    if (!s || !s->edits) return;
-
     if(s->size >= s->capacity){
         s->capacity *= 2;
-        Edit *temp = realloc(s->edits, s->capacity*sizeof(Edit));
-        if(!temp) return;
-        s->edits = temp;
+        s->edits = realloc(s->edits, s->capacity*sizeof(Edit));
     }
     s->edits[s->size] = e;
     s->size++;
@@ -219,8 +197,8 @@ Edit es_pop(EditStack *s) {
  */
 int es_empty(EditStack *s) {
     // TODO: Implement this function
-    if(!s || !s->edits) return 1;
-    return (s->size == 0) ? 1 : 0;
+    if(s->size == 0) return 1;
+    return 0;
 }
 
 /* TODO 14: Implement es_clear
@@ -361,19 +339,24 @@ char *canonicalize(const char *s) {
 
     char *result = malloc(strlen(s)+1*sizeof(char));
     if (result==NULL){
-        return NULL;
+        return NULL; // if allocation fails return nULL
     }
-    int j=0;
-    size_t len = strlen(s);
+    int j=0; // index for result buffer
+    size_t len = strlen(s); // input string length
 
     for(size_t i=0; i<len; i++){
-        if(isalnum(s[i])){
-            result[j++]=tolower(s[i]);
+        if(isalnum(s[i])){ // allow both letters and digits
+            result[j++]=tolower(s[i]); // convert to lowercase
         }else if(s[i] == ' '){
-            result[j++] = '_';
+            result[j++] = '_'; // for whitespace replace with udnerscore
+        }
+        else if(s[i] == '?'){ // ignore puncuation
+            result[i] = '\0';
+        }else{
+            result[i] = s[i];
         }
     }
-    result[j] = '\0';
+    result[strlen(s)+1] = '\0';;
     return result;
 }
 
@@ -385,9 +368,9 @@ char *canonicalize(const char *s) {
  */
 unsigned h_hash(const char *s) {
     // TODO: Implement this function
-    unsigned hash = 5381;
+    unsigned hash = 5381; // initial val
     int c;
-    while((c = *s++)){
+    while((c = *s++)){ // iterate until null is found
         hash = (hash*33) +c;
     }
     return hash;
@@ -401,7 +384,7 @@ unsigned h_hash(const char *s) {
 void h_init(Hash *h, int nbuckets) {
     // TODO: Implement this function
     h->nbuckets = nbuckets;
-    h->size = 0;
+    h->size = 0; // 0 initial entries
 
     h->buckets = calloc(nbuckets, sizeof(Entry *));
     
@@ -427,12 +410,13 @@ void h_init(Hash *h, int nbuckets) {
  */
 int h_put(Hash *h, const char *key, int animalId) {
     // TODO: Implement this function
-    int idx = h_hash(key) % h->nbuckets;
+    int idx = h_hash(key) % h->nbuckets; // find index for bucket
     Entry *e = h->buckets[idx];
 
+    // traverse Linked List at this bucket
     while(e){
-        if(strcmp(e->key, key) == 0){
-            for(int i=0; i < e->vals.count; i++){
+        if(strcmp(e->key, key) == 0){ // key exists alr
+            for(int i=0; i < e->vals.count; i++){ // check if animalId alr exists
                 if(e->vals.ids[i] == animalId){
                     return 0;
                 }
@@ -440,24 +424,27 @@ int h_put(Hash *h, const char *key, int animalId) {
         if(e->vals.count >= e->vals.capacity){
             int newMax = e->vals.capacity*2;
             int *newIds = realloc(e->vals.ids, newMax*sizeof(int));
-            if(newIds==NULL) return 0;
+            if(newIds==NULL) return 0; // failed to allocate
             e->vals.ids = newIds;
             e->vals.capacity = newMax;
         }
+        //add animals to vals
         e->vals.ids[e->vals.count++] = animalId;
-        return 1;
+        return 1; // success 
         }
-        e = e->next;
+        e = e->next; // move to next entry
     }
+
     Entry *newEntry = malloc(sizeof(Entry));
     if(newEntry==NULL) return 0;
 
-    newEntry->key = strdup(key);
+    newEntry->key = strdup(key); // copy key string
     if(newEntry->key == NULL){
         free (newEntry);
         return 0;
     }
 
+    // initialize vals list
     newEntry->vals.count = 1;
     newEntry->vals.capacity = 4;
     newEntry->vals.ids = malloc(newEntry->vals.capacity*sizeof(int));
@@ -467,12 +454,13 @@ int h_put(Hash *h, const char *key, int animalId) {
         return 0;
     }
     
-    newEntry->vals.ids[0] = animalId;
+    newEntry->vals.ids[0] = animalId; // add first animal
 
+    // insert at head of chain
     newEntry->next = h->buckets[idx];
     h->buckets[idx] = newEntry;
-    h->size++;
-    return 1;
+    h->size++; // increase size of hash table
+    return 1; // success
 
 }
 
@@ -487,20 +475,23 @@ int h_put(Hash *h, const char *key, int animalId) {
  */
 int h_contains(const Hash *h, const char *key, int animalId) {
     // TODO: Implement this function
-    int idx = h_hash (key) % h->nbuckets;
+
+    int idx = h_hash (key) % h->nbuckets; // find index for bucket
     Entry *e = h->buckets[idx];
+
+    // search through animal list of animal IDs for a match
     while(e){
         if(strcmp(e->key, key) == 0){
             for(int i=0; i < e->vals.count; i++){
                 if(e->vals.ids[i] == animalId){
-                    return 1;
+                    return 1; // key found in list
                 }
             }
-        return 0;
+        return 0; // key found but not in list
         }
-    e = e->next;
+    e = e->next; // move to next entry
     }  
-    return 0;
+    return 0; // key found
 }
 
 /* TODO 25: Implement h_get_ids
@@ -520,17 +511,19 @@ int h_contains(const Hash *h, const char *key, int animalId) {
  */
 int *h_get_ids(const Hash *h, const char *key, int *outCount) {
     // TODO: Implement this function
-    int idx = h_hash(key) % h->nbuckets;
+    int idx = h_hash(key) % h->nbuckets; // find index for bucket
     Entry *e = h->buckets[idx];
 
+    // traverse chain for matching key
     while(e){
         if(strcmp(e->key, key)==0){
-            *outCount = e->vals.count;
-            return e->vals.ids;
+            *outCount = e->vals.count; // output number of IDs
+            return e->vals.ids; // return pointer to IDs array
         }
-        e = e->next;
+        e = e->next; // move to next extry
     }
 
+    // key not found
     *outCount = 0;
     return NULL;
 }
@@ -550,17 +543,18 @@ int *h_get_ids(const Hash *h, const char *key, int *outCount) {
  */
 void h_free(Hash *h) {
     // TODO: Implement this function
+    // free all entries in each bucket
     for(int i=0; i< h->nbuckets; i++){
         Entry *e = h->buckets[i];
         while(e){
-            Entry *temp = e;
-            e = e->next;
-            free(temp->key);
-            free(temp->vals.ids);
-            free(temp);
+            Entry *temp = e; // store current entry
+            e = e->next; // move to next
+            free(temp->key); // free key string
+            free(temp->vals.ids); // free ID
+            free(temp); // free entry struct
         }
     }
-    free(h->buckets);
+    free(h->buckets); // free bucket and reset fields
     h->buckets = NULL;
     h->size = 0;
     h->nbuckets = 0;

@@ -66,12 +66,15 @@ int check_integrity() {
             return 0;
         }
 
+        // Question Node - must have both children
         if(node->isQuestion){
             if(node->yes == NULL || node->no == NULL){
+                // Missing child - not valid
                 q_free(&q);
                 return 0;
                 
             }
+            // enque both children to continue checking
         q_enqueue(&q, node->yes, 0);
         q_enqueue(&q, node->no, 0);
         }
@@ -82,6 +85,8 @@ int check_integrity() {
             }
         }
     }
+
+    // finish traversal free queue and return valid
 
     //* 5. Free queue and return valid
     
@@ -114,7 +119,8 @@ typedef struct PathNode {
  * - Find where the paths diverge (LCA)
  * - Print the distinguishing questions from LCA to each animal
  */
-void find_shortest_path(const char *animal1, const char *animal2) {
+
+/* void find_shortest_path(const char *animal1, const char *animal2) {
     if (g_root == NULL) return;
     
     // TODO: Implement this function (OPTIONAL CHALLENGE)
@@ -122,3 +128,4 @@ void find_shortest_path(const char *animal1, const char *animal2) {
     
     printf("find_shortest_path not yet implemented\n");
 }
+*/

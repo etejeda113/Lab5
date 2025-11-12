@@ -57,22 +57,19 @@ void play_game() {
     refresh();
     getch();
 
-    Node *parent = NULL;
-    int parentAnswer = -1;
+    Node *parent = NULL; // track parent node for learning phase
+    int parentAnswer = -1; // record whether last answer was yes/no
 
 
     // Initialize stack
     FrameStack stack;
     fs_init(&stack);
-    
-  
-    // begin traversal
     fs_push(&stack, g_root, -1);
 
-    // done = 0
-    
+    // flag to exit game
     int done = 0;
 
+    // begin traversal
     while (!fs_empty(&stack) && !done) {
         Frame currentFrame = fs_pop(&stack);
         Node *cur = currentFrame.node;
@@ -85,6 +82,7 @@ void play_game() {
             snprintf(prompt, sizeof(prompt), "%s (y/n): ", cur->text);
             int answer = get_yes_no(6, 2, prompt);
 
+            // track parent and which branch selected
             parent = cur;
 
             if(answer){
@@ -93,19 +91,23 @@ void play_game() {
                 parentAnswer = 0;
             }
 
+            // Push next node (yes/no) branch onto the stack
             Node *next = (answer == 1) ? cur->yes : cur->no;
             fs_push(&stack, next, answer);
 
-            mvprintw(6, 2, "%-76s", "");
+            mvprintw(6, 2, "%-76s", ""); // clear input line
             refresh();
-        } else{
+        } 
 
-        // Leaf node (animal)
+         // Leaf node (animal)
+
+        else{
         char prompt[256];
         snprintf(prompt, sizeof(prompt), "Is it a %s? (y/n): ", cur->text);
         int correct = get_yes_no(6, 2, prompt);
         mvprintw(6, 2, "%-76s", ""); 
 
+        // If guess is correct
         if (correct) {
             attron(COLOR_PAIR(3) | A_BOLD);
             mvprintw(8, 2, "Yay! I guessed it!");
@@ -114,9 +116,11 @@ void play_game() {
             refresh();
             getch();
             done = 1;
-        } else {
+        } 
 
-        // LEARNING PHASE
+        // LEARNING PHASE (Wrong Guess)        
+        else {
+            //ask for correct animal name
         char *newAnimal_in = get_input(8, 2, "What animal were you thinking of? ");
         if (!newAnimal_in || newAnimal_in[0] == '\0') {
             mvprintw(10, 2, "No animal provided. Press any key to return...");
@@ -125,6 +129,7 @@ void play_game() {
             break;
         }
 
+        
         char *newAnimalCopy = strdup(newAnimal_in);
         if (!newAnimalCopy) {
             mvprintw(12, 2, "No animal provided. Press any key to return...");
@@ -133,6 +138,7 @@ void play_game() {
             break;
         }
 
+        // ask for a question to distinguish your animal from current animal list
         char *prompt_q = get_input(9, 2, "Provide a (yes/no) question to distinguish it: ");
         if (!prompt_q || prompt_q[0] == '\0') {
             free(newAnimalCopy);
@@ -151,14 +157,15 @@ void play_game() {
             break;
         }
         
+        // ask what the correct ans is for the new animal
         int answeredYes = get_yes_no(10, 2, "For your animal, what is the answer? (y/n): ");
 
-        // create new node for safe copies
+        // create new node for question and animal
         Node *qNode = create_question_node(prompt_qCopy);
         Node *ansNode = create_animal_node(newAnimalCopy);
 
-        free (prompt_qCopy);
-        free (newAnimalCopy);
+        free (prompt_qCopy); // free copy
+        free (newAnimalCopy); // free copy
 
         if (!qNode || !ansNode) {
             mvprintw(10, 2, "Error creating nodes. Press any key to return...");
@@ -169,6 +176,7 @@ void play_game() {
             break;
         }
 
+        //link new nodes
         if (answeredYes) {
             qNode->yes = ansNode;
             qNode->no = cur;
@@ -177,7 +185,7 @@ void play_game() {
             qNode->no = ansNode;
         }
 
-        if (!parent) {
+        if (!parent) { // update parent pointer 
             g_root = qNode;
         } else if (parentAnswer == 1) {
             parent->yes = qNode;
@@ -207,7 +215,7 @@ void play_game() {
     }
 
 
-    fs_free(&stack);
+    fs_free(&stack); // free mem
 }
 /* TODO 32: Implement undo_last_edit
  * Undo the most recent tree modification
